@@ -1,4 +1,10 @@
-import type { AudioFileLike, AudioTrackMetadata, TrimRange } from '../../domain/audio/audioTypes';
+import type {
+  AudioEffectsSettings,
+  AudioFileLike,
+  AudioRenderRequest,
+  AudioTrackMetadata,
+  TrimRange,
+} from '../../domain/audio/audioTypes';
 
 export interface AudioEnginePort {
   loadFile(file: AudioFileLike): Promise<AudioTrackMetadata>;
@@ -8,6 +14,8 @@ export interface AudioEnginePort {
   pause(): void;
   seek(timeSeconds: number): void;
   setPlaybackRate(rate: number): void;
+  setEffects(settings: AudioEffectsSettings): void;
+  renderSelection(request: AudioRenderRequest): Promise<AudioBuffer>;
   getCurrentTime(): number;
   getDuration(): number;
   isPlaying(): boolean;

@@ -1,33 +1,50 @@
-# Verification Status — Initial Scaffold
+# Verification Status — M2 + M3 implementation
 
-## Completed checks
+## Implemented in source
 
-- Core domain and browser-audio adapter type-checked with the globally available TypeScript 5.8.3 compiler using strict mode, `noUncheckedIndexedAccess`, and DOM libraries.
-- Ten runtime assertions passed for file validation, trim-range validation, time clamping, waveform peak extraction, and time formatting.
-- Manual review found and fixed a stale-playback-state issue when replacing an already-loaded file.
-- Import request identifiers prevent an older asynchronous decode from replacing a more recent file selection.
+- Shared real-time and offline Web Audio effects graph.
+- Bass boost low-shelf filter.
+- Five-band biquad equalizer.
+- Convolution reverb with a generated impulse response.
+- Delay/feedback echo with bounded feedback.
+- Non-destructive offline rendering of the selected source interval at the chosen playback rate.
+- Optional reverb/echo tail in the rendered result.
+- 16-bit PCM WAV encoder and RIFF/WAVE header validator.
+- MP3 worker encoder adapter with bounded PCM chunk transfer.
+- MPEG Layer III frame-header validator (sync, version, layer, bitrate index, and sample-rate index) and sample-rate selection.
+- UI controls, preview integration, export options, progress and download.
+- Unit tests for effect configuration, rendering request, WAV encoding, export validation, and MP3 PCM preparation.
 
-## Not yet verified
+## Checks completed during implementation
 
-- The npm dependencies have not been installed in this environment. The npm registry connection timed out.
-- Consequently, the full React/Vite application type-check, ESLint run, Vitest suite, production build, and browser playback smoke test have not been executed.
-- `package-lock.json` has not been generated. Run `npm install` locally, review and commit the generated lockfile, and use `npm ci` for subsequent reproducible installs.
-- `npm audit` has not yet been run against the resolved dependency tree.
+- Strict source-level TypeScript check passed using temporary ambient declarations for dependencies unavailable in this environment. This does not replace checking against the installed package declarations.
+- 16 runtime assertions passed for PCM WAV encoding, WAV validation, MPEG Layer III header validation, effect-setting normalization, render metadata, export naming, and effect-tail calculation.
+- Fake-Web-Audio-context runtime checks passed for playback range handling, playback-rate rendering, and offline render allocation.
+- Vitest test cases are included in source; the actual Vitest runner was not available in this environment.
 
-Do not treat this scaffold as release-ready until the checks above are completed on a machine with registry access and a browser test has confirmed real MP3/WAV playback.
+## Required local verification before merging
 
+Run on the project machine after `npm install`:
 
-## Trim selection increment
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm audit
+```
 
-- Added sample-boundary snapping for trim controls.
-- Added UI controls for start/end, reset, selected duration, and bounded preview.
-- Added `AudioEnginePort.playRange` and bounded playback in the browser adapter.
-- Added unit tests for sample snapping and browser-engine selection playback.
-- Full Vitest/React/Vite/browser verification remains pending in an environment where npm dependencies are installed.
+Then perform a browser smoke test:
 
-## Local checks run for the trim increment
+1. Import a known MP3 and WAV.
+2. Preview the selected range at 1x and 0.75x.
+3. Apply bass boost, EQ, reverb, and echo separately and together.
+4. Export WAV and verify duration/sample rate/channel count in a media player or audio inspection tool.
+5. Export MP3 at each supported bitrate and play the result in at least two independent players.
+6. Compare the live preview with the exported output; allow for encoder delay and lossy MP3 differences.
+7. Verify that export does not modify the original source and that UI interaction remains responsive during MP3 encoding.
+8. Test a long selection and a mobile browser for memory behaviour.
 
-- Strict TypeScript compilation passed for the domain and browser-audio engine modules using the globally available TypeScript compiler.
-- The React application source and WaveformCanvas passed a strict syntax/type pass against temporary minimal React declarations; this is not a substitute for compiling against the project's installed React type packages.
-- A Node-based fake-Web-Audio harness passed assertions for sample snapping, range validation, selected-region start/end, playback-rate continuity during selection preview, playback completion, and rejection of invalid ranges.
-- `npm install --no-audit --no-fund` timed out in this environment; therefore Vitest, ESLint, Vite production build, package audit, and real-browser verification of the trim controls remain unexecuted here.
+## Environment limitation
+
+The implementation environment did not have the project's npm dependencies installed, and npm registry access timed out during previous setup. Do not treat source-level checks or unit-test files as proof of a completed Vite build or real-browser export. Generate/update `package-lock.json` by running `npm install` locally, inspect the dependency/licence tree, then run the full verification commands above.

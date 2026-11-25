@@ -1,6 +1,6 @@
 # Dependency Baseline
 
-Direct dependencies are pinned exactly in `package.json`. The baseline was checked against package registry listings on 24 November 2026.
+Direct dependencies are pinned exactly in `package.json`. The baseline was checked against package registry listings on 25 November 2026.
 
 | Package | Pinned version | Role |
 |---|---:|---|
@@ -13,6 +13,7 @@ Direct dependencies are pinned exactly in `package.json`. The baseline was check
 | `typescript-eslint` | 8.74.0 | TypeScript lint rules |
 | Prettier | 3.10.1 | Formatting |
 | React type definitions | 19.3.0 | TypeScript declarations |
+| `@breezystack/lamejs` | 1.2.7 | MP3 encoding in a dedicated module worker (LGPL-3.0) |
 | Node type definitions | 26.6.6 | Node declarations for tooling |
 
 ## Compatibility reasoning
@@ -32,6 +33,7 @@ Direct dependencies are pinned exactly in `package.json`. The baseline was check
 - ESLint: https://www.npmjs.com/package/eslint
 - typescript-eslint compatibility: https://typescript-eslint.io/users/dependency-versions/
 - Prettier: https://www.npmjs.com/package/prettier
+- `@breezystack/lamejs`: https://www.npmjs.com/package/@breezystack/lamejs
 
 ## Required before CI activation
 

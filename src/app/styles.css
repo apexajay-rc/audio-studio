@@ -304,3 +304,175 @@ h2 { margin-bottom: 0; font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   .trim-footer { align-items: flex-start; flex-direction: column; }
   .trim-footer .button { width: 100%; }
 }
+
+/* Audio effects and export controls */
+.effects-panel,
+.export-panel {
+  margin-top: 22px;
+  padding: 20px;
+  background: rgba(8, 8, 13, 0.2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.effects-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+.effects-heading h3,
+.export-panel h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.effects-description {
+  max-width: 520px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.effect-section {
+  margin-top: 19px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.effect-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+  color: #e8e8f0;
+  font-size: 11px;
+}
+.effect-section-title strong { font-weight: 650; }
+.effect-section-title span,
+.equalizer-control strong,
+.effect-select-control strong {
+  color: #b9bbff;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.effect-slider {
+  display: block;
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.range-endpoints {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  color: #777786;
+  font-size: 9px;
+}
+.equalizer-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 13px;
+}
+.equalizer-control,
+.effect-select-control {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  color: #aaaab7;
+  font-size: 10px;
+}
+.equalizer-control > span,
+.effect-select-control > span { color: #bcbcc8; }
+.equalizer-control strong,
+.effect-select-control strong { font-weight: 600; }
+.effects-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.effects-two-column .effect-section { min-width: 0; }
+.effect-advanced-row {
+  margin-top: 17px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+}
+.export-controls {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(140px, 0.8fr) minmax(180px, 1fr);
+  align-items: end;
+  gap: 12px;
+  margin-top: 18px;
+}
+.export-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #aaaab7;
+  font-size: 10px;
+}
+.export-field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: #ececf2;
+  background: #262630;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.export-field select:disabled { opacity: 0.6; }
+.export-button { min-height: 40px; }
+.export-progress {
+  height: 6px;
+  overflow: hidden;
+  margin-top: 17px;
+  background: #2b2b37;
+  border-radius: 10px;
+}
+.export-progress > div {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 120ms linear;
+}
+.export-result {
+  margin: 13px 0 0;
+  padding: 10px 12px;
+  color: #a9dfc7;
+  background: rgba(117, 199, 163, 0.08);
+  border: 1px solid rgba(117, 199, 163, 0.16);
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.export-footnote {
+  margin: 13px 0 0;
+  color: #777786;
+  font-size: 9px;
+  line-height: 1.55;
+}
+.export-button:disabled { cursor: progress; }
+
+@media (max-width: 680px) {
+  .effects-panel,
+  .export-panel { padding: 15px 12px; }
+  .equalizer-grid { gap: 8px; }
+  .equalizer-control { gap: 7px; font-size: 9px; }
+  .equalizer-control strong { font-size: 9px; }
+  .export-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .export-button { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (max-width: 420px) {
+  .effects-heading { align-items: flex-start; }
+  .effects-heading .text-button { white-space: nowrap; }
+  .equalizer-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .equalizer-control > span { font-size: 8px; }
+  .equalizer-control strong { font-size: 8px; }
+  .effects-two-column { grid-template-columns: 1fr; gap: 0; }
+  .export-controls { grid-template-columns: 1fr; }
+  .export-button { grid-column: auto; }
+}

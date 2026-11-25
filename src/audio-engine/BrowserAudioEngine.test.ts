@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrowserAudioEngine } from './BrowserAudioEngine';
 import type { AudioFileLike } from '../domain/audio/audioTypes';
+import { DEFAULT_AUDIO_EFFECTS } from '../domain/audio/audioEffects';
 
 interface StartCall {
   readonly when: number;
@@ -8,30 +9,44 @@ interface StartCall {
   readonly duration: number | undefined;
 }
 
-class FakeAudioBuffer {
-  readonly duration = 10;
-  readonly sampleRate = 10;
-  readonly numberOfChannels = 1;
-  readonly length = 100;
-
-  getChannelData(): Float32Array {
-    return new Float32Array(this.length);
+class FakeAudioParam {
+  value = 0;
+  setTargetAtTime(value: number): void {
+    this.value = value;
   }
 }
 
-class FakeBufferSource {
+class FakeNode {
+  connect(): void {}
+  disconnect(): void {}
+}
+
+class FakeAudioBuffer {
+  readonly duration: number;
+  readonly sampleRate: number;
+  readonly numberOfChannels: number;
+  readonly length: number;
+  private readonly channels: Float32Array[];
+
+  constructor(numberOfChannels = 1, length = 441000, sampleRate = 44100) {
+    this.numberOfChannels = numberOfChannels;
+    this.length = length;
+    this.sampleRate = sampleRate;
+    this.duration = length / sampleRate;
+    this.channels = Array.from({ length: numberOfChannels }, () => new Float32Array(length));
+  }
+
+  getChannelData(channel: number): Float32Array {
+    return this.channels[channel] ?? new Float32Array(this.length);
+  }
+}
+
+class FakeBufferSource extends FakeNode {
   buffer: AudioBuffer | null = null;
-  playbackRate = { value: 1 };
+  playbackRate = new FakeAudioParam();
   onended: (() => void) | null = null;
   readonly startCalls: StartCall[] = [];
   stopped = false;
-  disconnected = false;
-
-  connect(): void {}
-
-  disconnect(): void {
-    this.disconnected = true;
-  }
 
   start(when = 0, offset = 0, duration?: number): void {
     this.startCalls.push({ when, offset, duration });
@@ -42,10 +57,32 @@ class FakeBufferSource {
   }
 }
 
-class FakeGainNode {
-  readonly gain = { value: 1 };
+class FakeGainNode extends FakeNode {
+  readonly gain = new FakeAudioParam();
+}
 
-  connect(): void {}
+class FakeBiquadFilter extends FakeNode {
+  type: BiquadFilterType = 'lowpass';
+  readonly frequency = new FakeAudioParam();
+  readonly Q = new FakeAudioParam();
+  readonly gain = new FakeAudioParam();
+}
+
+class FakeConvolver extends FakeNode {
+  buffer: AudioBuffer | null = null;
+  normalize = true;
+}
+
+class FakeDelay extends FakeNode {
+  readonly delayTime = new FakeAudioParam();
+}
+
+class FakeDynamicsCompressor extends FakeNode {
+  readonly threshold = new FakeAudioParam();
+  readonly knee = new FakeAudioParam();
+  readonly ratio = new FakeAudioParam();
+  readonly attack = new FakeAudioParam();
+  readonly release = new FakeAudioParam();
 }
 
 class FakeAudioContext {
@@ -53,7 +90,8 @@ class FakeAudioContext {
   static readonly createdSources: FakeBufferSource[] = [];
 
   state: AudioContextState = 'running';
-  readonly destination = {} as AudioDestinationNode;
+  readonly sampleRate = 44100;
+  readonly destination = new FakeNode() as unknown as AudioDestinationNode;
 
   get currentTime(): number {
     return FakeAudioContext.clock;
@@ -61,6 +99,26 @@ class FakeAudioContext {
 
   createGain(): GainNode {
     return new FakeGainNode() as unknown as GainNode;
+  }
+
+  createBiquadFilter(): BiquadFilterNode {
+    return new FakeBiquadFilter() as unknown as BiquadFilterNode;
+  }
+
+  createConvolver(): ConvolverNode {
+    return new FakeConvolver() as unknown as ConvolverNode;
+  }
+
+  createDelay(): DelayNode {
+    return new FakeDelay() as unknown as DelayNode;
+  }
+
+  createDynamicsCompressor(): DynamicsCompressorNode {
+    return new FakeDynamicsCompressor() as unknown as DynamicsCompressorNode;
+  }
+
+  createBuffer(channels: number, length: number, sampleRate: number): AudioBuffer {
+    return new FakeAudioBuffer(channels, length, sampleRate) as unknown as AudioBuffer;
   }
 
   createBufferSource(): AudioBufferSourceNode {
@@ -80,6 +138,35 @@ class FakeAudioContext {
   }
 }
 
+class FakeOfflineAudioContext extends FakeAudioContext {
+  static lastInstance: FakeOfflineAudioContext | null = null;
+  static lastSource: FakeBufferSource | null = null;
+  readonly requestedLength: number;
+  readonly requestedChannels: number;
+
+  constructor(channels: number, length: number, sampleRate: number) {
+    super();
+    this.requestedChannels = channels;
+    this.requestedLength = length;
+    Object.defineProperty(this, 'sampleRate', { value: sampleRate });
+    FakeOfflineAudioContext.lastInstance = this;
+  }
+
+  override createBufferSource(): AudioBufferSourceNode {
+    const source = new FakeBufferSource();
+    FakeOfflineAudioContext.lastSource = source;
+    return source as unknown as AudioBufferSourceNode;
+  }
+
+  async startRendering(): Promise<AudioBuffer> {
+    return new FakeAudioBuffer(
+      this.requestedChannels,
+      this.requestedLength,
+      this.sampleRate,
+    ) as unknown as AudioBuffer;
+  }
+}
+
 function validFile(): AudioFileLike {
   return {
     name: 'test-track.wav',
@@ -89,11 +176,13 @@ function validFile(): AudioFileLike {
   };
 }
 
-describe('BrowserAudioEngine range playback', () => {
+describe('BrowserAudioEngine range playback and rendering', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     FakeAudioContext.clock = 0;
     FakeAudioContext.createdSources.length = 0;
+    FakeOfflineAudioContext.lastInstance = null;
+    FakeOfflineAudioContext.lastSource = null;
   });
 
   it('starts playback at the selected offset and stops at the selected end', async () => {
@@ -143,6 +232,66 @@ describe('BrowserAudioEngine range playback', () => {
     expect(resumedSource?.playbackRate.value).toBe(0.5);
     expect(resumedSource?.startCalls).toEqual([{ when: 0, offset: 3, duration: 3 }]);
 
+    await engine.dispose();
+  });
+
+  it('renders the selected range at the requested playback speed', async () => {
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext);
+    const engine = new BrowserAudioEngine();
+    await engine.loadFile(validFile());
+
+    const rendered = await engine.renderSelection({
+      range: { startSeconds: 2, endSeconds: 4 },
+      playbackRate: 0.5,
+      effects: DEFAULT_AUDIO_EFFECTS,
+      targetSampleRate: 44100,
+      outputChannels: 1,
+    });
+
+    expect(FakeOfflineAudioContext.lastInstance?.requestedLength).toBe(44100 * 4);
+    expect(FakeOfflineAudioContext.lastSource?.playbackRate.value).toBe(0.5);
+    expect(FakeOfflineAudioContext.lastSource?.startCalls).toEqual([
+      { when: 0, offset: 2, duration: 2 },
+    ]);
+    expect(rendered.duration).toBe(4);
+    await engine.dispose();
+  });
+
+  it('adds a render tail when reverb or echo is enabled', async () => {
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext);
+    const engine = new BrowserAudioEngine();
+    await engine.loadFile(validFile());
+
+    await engine.renderSelection({
+      range: { startSeconds: 2, endSeconds: 4 },
+      playbackRate: 1,
+      effects: { ...DEFAULT_AUDIO_EFFECTS, reverbMix: 0.5 },
+      targetSampleRate: 44100,
+      outputChannels: 1,
+    });
+
+    // 4.4 * 44,100 is mathematically integral; tolerate FP representation noise.
+    expect(FakeOfflineAudioContext.lastInstance?.requestedLength).toBe(194040);
+    await engine.dispose();
+  });
+
+  it('rounds genuinely fractional render lengths up to the next sample frame', async () => {
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    vi.stubGlobal('OfflineAudioContext', FakeOfflineAudioContext);
+    const engine = new BrowserAudioEngine();
+    await engine.loadFile(validFile());
+
+    await engine.renderSelection({
+      range: { startSeconds: 2, endSeconds: 4.00001 },
+      playbackRate: 1,
+      effects: { ...DEFAULT_AUDIO_EFFECTS, reverbMix: 0.5 },
+      targetSampleRate: 44100,
+      outputChannels: 1,
+    });
+
+    expect(FakeOfflineAudioContext.lastInstance?.requestedLength).toBe(194041);
     await engine.dispose();
   });
 });
