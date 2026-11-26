@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — Universal Tab Audio Studio</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b0d12;color:#eef1f8}
+    body{max-width:820px;margin:48px auto;padding:0 22px;line-height:1.7}
+    h1,h2{line-height:1.2}h1{font-size:2rem}h2{margin-top:2rem;font-size:1.2rem}
+    p,li{color:#c4ccda}a{color:#aa9cff}code{color:#c5baff}
+    .note{border:1px solid #343b4b;border-radius:12px;padding:16px;background:#141923}
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p><strong>Universal Tab Audio Studio</strong> is a browser extension that captures audio from the browser tab the user explicitly selects, applies audio effects locally, and lets the user export the processed recording.</p>
+  <p><strong>Effective date:</strong> 26 November 2026</p>
+
+  <h2>Information the extension accesses</h2>
+  <ul>
+    <li><strong>Selected tab metadata:</strong> after the user clicks the extension toolbar button, the extension reads that tab's identifier, title, and URL hostname to identify the source in the Studio interface and establish the capture session.</li>
+    <li><strong>Selected tab audio:</strong> after that explicit user action, Chrome's <code>tabCapture</code> API provides the tab's audio stream. The extension processes the stream in the browser using the Web Audio API.</li>
+    <li><strong>Temporary session state:</strong> the extension temporarily stores the capture handoff token, tab identifiers, source title, and hostname in Chrome's session storage so the background service worker can hand the stream to the Studio page and clean up the session.</li>
+    <li><strong>Playback settings:</strong> speed and pitch settings are applied to supported HTML audio/video elements in the selected tab. The original playback settings are held in page memory so they can be restored.</li>
+  </ul>
+
+  <h2>How information is used</h2>
+  <p>The information above is used only to capture the tab selected by the user, label that source in the Studio interface, apply audio effects, maintain the active capture session, and restore supported media playback settings when capture ends.</p>
+
+  <h2>Local processing and exported files</h2>
+  <p>Audio capture, effects processing, and recording occur locally in the browser. Audio is held in memory while it is processed and recorded. When the user selects an export action, the extension creates a file locally and asks the browser to download it to the user's chosen/default download location.</p>
+  <p>The extension does not upload captured audio, recordings, tab titles, hostnames, or exported files to a developer-controlled server.</p>
+
+  <h2>Sharing, analytics, and tracking</h2>
+  <p>The extension does not operate an analytics or advertising service, does not use tracking cookies, and does not share the accessed tab metadata or audio with the developer or other third parties. It makes no network requests as part of its audio-processing functionality.</p>
+
+  <h2>Retention and deletion</h2>
+  <p>Temporary capture data is held in Chrome session storage and in browser memory for the active session. The extension removes session entries when the Studio tab closes. Browser session storage is cleared by Chrome when the browser session ends. Exported files are under the user's control and can be deleted using the operating system's normal file-management tools.</p>
+
+  <h2>User control</h2>
+  <p>Capture starts only after the user invokes the extension from the source tab. The user can stop capture or close the Studio tab to end the capture session. The extension does not attempt to bypass DRM, authentication, or other access controls. Whether a particular source is capturable depends on Chrome and the source page.</p>
+
+  <h2>Contact</h2>
+  <p>Before publishing, replace this paragraph with a monitored support email address or the project's public GitHub Issues URL.</p>
+
+  <div class="note"><strong>Important:</strong> The browser API's availability does not grant permission to record, modify, or export third-party content. Users are responsible for ensuring their use complies with applicable law, rights-holder permissions, and the terms that apply to the source service.</div>
+</body>
+</html>

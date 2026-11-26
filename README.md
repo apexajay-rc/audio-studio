@@ -1,76 +1,113 @@
-# Audio Studio
+# Universal Tab Audio Studio 1.0.2
 
-A browser-first, casual audio editing studio. Audio is decoded, previewed, rendered, and exported locally in the browser; the application does not upload source audio to a server.
+A source-independent Chromium Manifest V3 extension that captures the audio output of the browser tab where the user invokes the toolbar action, applies live audio effects, routes the processed signal back to the speakers, and records that processed output for download.
 
-## Requirements
+## Install
 
-- Node.js `>=22.12.0` (the included `.nvmrc` selects Node `26.13.1`)
-- npm 10 or newer
-- A modern browser with Web Audio API, OfflineAudioContext, and Web Worker support
+1. Download and extract `universal-tab-audio-studio.zip`.
+2. Open `chrome://extensions` in Chrome, Edge or Brave.
+3. Enable **Developer mode**.
+4. Click **Load unpacked**.
+5. Select the extracted `universal-tab-audio-studio` folder.
+6. Open a tab that is playing audio and click the extension's toolbar icon.
+7. The Studio opens in a new tab and starts capturing the tab you launched it from.
 
-## Setup
+The toolbar click is the user invocation required by Chrome's `tabCapture` API. Chrome 116 or later is required because the extension uses a consumer-tab-scoped stream ID.
 
-```bash
-npm install
-npm run dev
+## Included
+
+- Capture audio from the invoked browser tab without a site-specific integration.
+- Automatic audio-level detection and live signal meter.
+- Real-time playback through the effects graph.
+- Slowed + Reverb and Nightcore presets.
+- Playback speed control for ordinary HTML `<audio>` and `<video>` players, with optional pitch preservation.
+- Reverb, echo, three-band EQ, stereo width, pan and saturation.
+- Record the output **after** the effects chain.
+- Export processed audio as WebM/Opus or WAV/16-bit PCM.
+- Local processing; no network requests, analytics or remote code.
+
+## Important compatibility limits
+
+"Any source" means any browser tab whose audio Chrome makes available through `chrome.tabCapture`. It does not mean every page or protected stream is guaranteed to be capturable. Browser-internal pages, some DRM/protected media, muted tabs, and some unusual player architectures can provide no usable audio. The extension does not defeat DRM or other access controls.
+
+The speed control adjusts HTML audio/video elements in the source tab. Audio produced entirely through a Web Audio graph, a remote app surface, or a player that does not expose a media element may not have controllable playback speed. The other effects and recording operate on the captured tab signal when Chrome provides it.
+
+Track identification is not implemented. The Studio displays the source tab title and host and detects whether audio energy is present; it does not claim to recognise the song or artist. Sites may expose their own title in the tab title, but this is not guaranteed.
+
+Tab capture changes the tab's direct audio output. The extension routes the captured signal through the effects graph to the speakers and recorder. If the Studio is closed, the capture ends and the source tab's playback speed is restored where the source tab is still reachable.
+
+## Export formats
+
+- **WebM / Opus:** recommended for faster export and smaller files.
+- **WAV / 16-bit PCM:** the recorded WebM data is decoded locally and converted to uncompressed PCM. This uses more memory and produces larger files.
+
+MP3 is not included because browsers do not provide a native MP3 encoder through `MediaRecorder`.
+
+## Technical architecture
+
+```text
+User clicks toolbar icon on source tab
+                |
+                v
+       chrome.tabCapture
+                |
+                v
+       captured MediaStream
+                |
+                v
+          AudioContext
+                |
+       +--------+---------+
+       |                  |
+       v                  v
+  AnalyserNode       Effects graph
+  (signal meter)     EQ / Reverb / Echo
+                     Saturation / Width
+                           |
+                           v
+                    Pan / Compressor
+                           |
+                           v
+                      Master Gain
+                       /       \
+                      v         v
+                 Speakers   MediaStreamDestination
+                                  |
+                                  v
+                             MediaRecorder
+                                  |
+                                  v
+                         WebM/Opus or WAV
 ```
 
-Open the local URL printed by Vite.
+Playback speed is applied to ordinary HTML media elements in the captured source tab using `chrome.scripting` with the `activeTab` grant. It is deliberately separate from the captured-signal DSP graph.
 
-## Verification
+## Validation
 
-```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm audit
+Run:
+
+```sh
+node --check background.js
+node --check studio.js
+node --test tests/*.test.js
 ```
 
-Run `npm run test:watch` while developing domain logic.
+The included tests validate the manifest, source-independent capture setup, the page-speed controller and the WAV encoder's header/layout contract. A real end-to-end capture test still needs to be run in a desktop Chrome session with a live audio source because browser media capture is not faithfully simulated by Node mocks.
 
-## Current functionality
+## Legal and platform note
 
-- Import a local MP3 or WAV file (20 MiB maximum).
-- Decode audio in the browser and draw a waveform from its samples.
-- Play, pause, seek, and change playback rate from 0.5x to 2x.
-- Select a non-destructive trim region with sample-aligned start/end controls.
-- Preview only the selected region without changing the original audio.
-- Apply live bass boost, a five-band equalizer, algorithmic reverb, and echo.
-- Render the selected region with the chosen speed and effect settings.
-- Export 16-bit PCM WAV or MP3 at 128, 192, 256, or 320 kbps.
-- Run MP3 encoding in a dedicated Web Worker so encoding does not monopolize the UI thread.
-- Validate WAV container headers, MP3 frame sync, and rendered audio metadata before download.
+The extension provides a general browser tab audio capture mechanism. The browser API's availability is not permission from a streaming service or a copyright holder to record or export its content. Users are responsible for ensuring their recording and use comply with applicable law, rights-holder permissions and service terms. The extension does not bypass DRM or other source-side protections.
 
-## Processing model
+### Capture handoff hardening (1.0.2)
 
-The real-time preview and offline export use the same `createAudioEffectsGraph` implementation. `AudioContext` drives interactive playback; `OfflineAudioContext` renders the selected range into an `AudioBuffer` for encoding. The original decoded source remains unchanged. Playback-rate changes are currently resampling-style changes that also change pitch; pitch-preserving time stretch is not implemented yet.
+The background service worker waits until `studio.html` has committed in its
+consumer tab before calling `chrome.tabCapture.getMediaStreamId()`. It then
+places the one-use stream ID in `chrome.storage.session` for that Studio tab.
+The Studio page consumes the ID without navigating or reloading after the ID
+is created. This avoids wasting the stream ID's short lifetime on a second
+page navigation. The wait for the initial commit is bounded by 15 seconds.
 
-Effects are intentionally conservative: bass boost is a low-shelf filter, the EQ is a five-band set of biquad filters, reverb uses a generated convolution impulse response, and echo uses a bounded-feedback delay loop. A final dynamics compressor helps manage level peaks; exported PCM samples are also clipped to the representable range.
+If `getUserMedia()` still fails, the Studio now displays the DOMException name
+and the browser's tab-capture status when available. The message explicitly
+does not assume that every capture failure is caused by DRM.
 
-## Export details
-
-- WAV output: 16-bit little-endian PCM with a standard 44-byte RIFF/WAVE header.
-- MP3 output: LAME-based CBR encoding in a dedicated worker. MP3 uses a standard MPEG-1 sample rate (32, 44.1, or 48 kHz); the audio is resampled during offline rendering when needed.
-- Reverb/echo tails are included in the rendered output. Therefore, an export with time-based effects may be slightly longer than the selected region.
-- MP3 encoding uses `@breezystack/lamejs` 1.2.7 under LGPL-3.0. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) before redistribution or commercial use.
-
-## Not implemented yet
-
-- URL/source integrations
-- Pitch-preserving time stretching
-- Split editing and multiple tracks
-- Preset management and project persistence
-- Cloud accounts or server-side processing
-
-## Engineering approach
-
-See [`docs/architecture.md`](docs/architecture.md). We use a functional domain core, a stateful browser audio adapter, typed contracts, data-oriented audio buffers, shared real-time/offline effect graphs, strict TypeScript, unit tests, and explicit resource cleanup.
-
-## Dependency policy
-
-Direct dependencies are pinned to exact versions in `package.json`. Run `npm install` after dependency changes and commit the generated `package-lock.json`; use `npm ci` for repeatable installs and CI. Review dependency changes, licences, and the resolved dependency tree before merging updates.
-
-## Privacy and source rights
-
-Local audio is processed in the browser. Only import audio that you own or are authorized to edit. Future online integrations must use permitted access paths; the application will not bypass DRM, access controls, or CORS restrictions.
