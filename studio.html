@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Universal Tab Audio Studio</title>
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Universal Tab Audio Studio home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span><strong>Universal</strong><small>TAB AUDIO STUDIO</small></span>
+    </a>
+    <div class="header-right">
+      <div class="privacy"><span class="privacy-dot"></span> Local processing</div>
+      <span class="version">v1.0.0</span>
+    </div>
+  </header>
+
+  <main id="top" class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">LIVE TAB CAPTURE · EFFECTS · EXPORT</div>
+        <h1>Shape the sound.<br><em>Save the result.</em></h1>
+        <p class="hero-copy">The extension captures audio from the browser tab you launched it on. The site does not need a dedicated integration.</p>
+      </div>
+      <div class="source-card">
+        <div class="source-card-top">
+          <span class="source-label">CAPTURE SOURCE</span>
+          <span id="capture-pill" class="status-pill pending"><span class="status-dot"></span><span id="capture-status">Connecting</span></span>
+        </div>
+        <strong id="source-title" class="source-title">Current browser tab</strong>
+        <span id="source-host" class="source-host">Waiting for tab information…</span>
+        <div class="meter-wrap">
+          <div class="meter-label"><span id="signal-state">Waiting for audio</span><span id="signal-level">−∞ dBFS</span></div>
+          <div class="meter"><div id="meter-fill" class="meter-fill"></div></div>
+        </div>
+        <div class="source-actions">
+          <button id="resume-button" class="button secondary" type="button" hidden>Enable audio</button>
+          <button id="stop-capture" class="text-button" type="button" disabled>Stop capture</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace-grid">
+      <section class="panel effects-panel">
+        <div class="panel-heading">
+          <div><div class="eyebrow">01 / PROCESS</div><h2>Effects rack</h2></div>
+          <div class="live-indicator"><span></span> LIVE</div>
+        </div>
+
+        <div class="preset-row">
+          <button class="preset active" id="preset-slow" type="button">Slowed + Reverb</button>
+          <button class="preset" id="preset-nightcore" type="button">Nightcore</button>
+          <button class="preset reset" id="preset-reset" type="button">Reset</button>
+        </div>
+
+        <div class="control-block">
+          <div class="control-head"><label for="speed">Playback speed</label><output id="speed-value">0.80×</output></div>
+          <input id="speed" type="range" min="0.5" max="1.5" step="0.01" value="0.8">
+          <div class="range-labels"><span>0.50×</span><span>1.00×</span><span>1.50×</span></div>
+          <label class="check-line"><input id="keep-pitch" type="checkbox"> Keep original pitch (where supported)</label>
+          <p class="micro-note">Speed is applied to HTML audio/video players in the source tab. Web Audio-only players may not expose a controllable speed.</p>
+        </div>
+
+        <div class="control-block">
+          <div class="control-head"><label for="reverb">Reverb</label><output id="reverb-value">40%</output></div>
+          <input id="reverb" type="range" min="0" max="100" step="1" value="40">
+        </div>
+        <div class="control-block">
+          <div class="control-head"><label for="echo">Echo</label><output id="echo-value">0%</output></div>
+          <input id="echo" type="range" min="0" max="100" step="1" value="0">
+        </div>
+
+        <div class="three-controls">
+          <div class="control-block compact">
+            <div class="control-head"><label for="bass">Bass</label><output id="bass-value">0 dB</output></div>
+            <input id="bass" type="range" min="-12" max="12" step="1" value="0">
+          </div>
+          <div class="control-block compact">
+            <div class="control-head"><label for="mid">Mid</label><output id="mid-value">0 dB</output></div>
+            <input id="mid" type="range" min="-12" max="12" step="1" value="0">
+          </div>
+          <div class="control-block compact">
+            <div class="control-head"><label for="treble">Treble</label><output id="treble-value">0 dB</output></div>
+            <input id="treble" type="range" min="-12" max="12" step="1" value="0">
+          </div>
+        </div>
+
+        <div class="two-controls">
+          <div class="control-block compact">
+            <div class="control-head"><label for="width">Stereo width</label><output id="width-value">100%</output></div>
+            <input id="width" type="range" min="0" max="200" step="1" value="100">
+          </div>
+          <div class="control-block compact">
+            <div class="control-head"><label for="pan">Pan</label><output id="pan-value">Center</output></div>
+            <input id="pan" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+        </div>
+
+        <div class="control-block">
+          <div class="control-head"><label for="saturation">Saturation</label><output id="saturation-value">0%</output></div>
+          <input id="saturation" type="range" min="0" max="100" step="1" value="0">
+        </div>
+
+        <div class="effects-footnote">All effects run locally in the browser. No audio is uploaded to a server.</div>
+      </section>
+
+      <aside class="side-column">
+        <section class="panel export-panel">
+          <div class="panel-heading">
+            <div><div class="eyebrow">02 / RECORD</div><h2>Export output</h2></div>
+            <div class="rec-dot" id="rec-dot"></div>
+          </div>
+          <div class="record-display">
+            <span class="record-caption">PROCESSED AUDIO</span>
+            <strong id="record-time">00:00</strong>
+            <span id="record-state" class="record-state">Ready to record</span>
+          </div>
+          <label class="select-label" for="format">File format</label>
+          <select id="format">
+            <option value="webm">WebM · Opus (recommended)</option>
+            <option value="wav">WAV · 16-bit PCM</option>
+          </select>
+          <div class="button-row">
+            <button id="record-button" class="button primary" type="button" disabled><span class="button-icon">●</span> Start recording</button>
+            <button id="stop-recording" class="button danger" type="button" disabled>Stop &amp; export</button>
+          </div>
+          <div id="export-status" class="export-status" role="status" aria-live="polite">Capture the current tab to begin.</div>
+          <div class="export-details"><span>Output source</span><strong>After effects rack</strong><span>Encoding</span><strong id="encoding-label">Opus · WebM</strong><span>Storage</span><strong>Local download</strong></div>
+        </section>
+
+        <section class="panel how-panel">
+          <div class="eyebrow">HOW IT WORKS</div>
+          <ol>
+            <li><span>1</span><div><strong>Launch on a playing tab</strong><small>Click the extension toolbar icon on the tab you want to process.</small></div></li>
+            <li><span>2</span><div><strong>Adjust the sound</strong><small>Effects are applied live and heard through your speakers.</small></div></li>
+            <li><span>3</span><div><strong>Record and export</strong><small>Only the processed output is written to the downloaded file.</small></div></li>
+          </ol>
+        </section>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <span>UNIVERSAL TAB AUDIO STUDIO · CHROMIUM MV3</span>
+      <span>Audio remains on this device.</span>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="audio-core.js"></script>
+  <script src="studio.js"></script>
+</body>
+</html>
